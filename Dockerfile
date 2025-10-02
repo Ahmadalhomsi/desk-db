@@ -1,19 +1,16 @@
 # Use the official Node.js 20 Alpine image as base
 FROM node:20.14.0-alpine AS base
 
-# Install pnpm globally
-RUN npm install -g pnpm
-
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy only lockfile and manifest for better caching
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.json* ./
 
 # Install dependencies (only production for runtime image)
-RUN pnpm install --frozen-lockfile --prod=false
+RUN npm ci --omit=dev
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -26,10 +23,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Generate Prisma Client before building
-RUN pnpm prisma generate
+RUN npx prisma generate
 
 # Build the application
-RUN pnpm build
+RUN npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -43,7 +40,7 @@ RUN apk add --no-cache curl
 
 # Create a non-root user
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs
+    && adduser --system --uid 1001 nextjs
 
 # Copy only necessary files
 COPY --from=builder /app/public ./public
@@ -59,7 +56,7 @@ USER nextjs
 
 # Healthcheck for Coolify
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
 EXPOSE 3000
 ENV PORT=3000
