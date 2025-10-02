@@ -17,6 +17,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set lowercase image name
+        id: prep
+        run: |
+          echo "IMAGE_NAME_LOWER=${IMAGE_NAME,,}" >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -28,14 +33,14 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}   # ensure repo Actions has packages: write
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }},${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.IMAGE_NAME_LOWER }}:${{ github.sha }},${{ env.IMAGE_NAME_LOWER }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
