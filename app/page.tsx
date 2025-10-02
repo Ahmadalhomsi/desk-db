@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { FocusCards } from "@/components/ui/focus-cards";
 import { VanishInput } from "@/components/ui/vanish-input";
 import { WobbleCard } from "@/components/ui/wobble-card";
-import { Search, Plus, ExternalLink, Trash2, Edit, Filter } from "lucide-react";
+import { Search, Plus, ExternalLink, Trash2, Edit, Filter, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface Customer {
@@ -15,6 +15,8 @@ interface Customer {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  isOnline?: boolean;
+  lastPing?: string;
 }
 
 export default function Home() {
@@ -25,6 +27,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pingingAll, setPingingAll] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -126,21 +129,65 @@ export default function Home() {
     }
   };
 
-  const handleCardClick = (card: { title: string; anydeskId: string; category: string; notes?: string }) => {
-    window.open(`anydesk:${card.anydeskId}`, "_blank");
+  const pingCustomer = async (customerId: string, anydeskId: string) => {
+    try {
+      // Simulate ping - in real scenario, you'd ping the actual AnyDesk service
+      // For now, we'll use a random online status for demonstration
+      const isOnline = Math.random() > 0.3; // 70% chance of being online
+      
+      setCustomers(prev => prev.map(c => 
+        c.id === customerId 
+          ? { ...c, isOnline, lastPing: new Date().toISOString() }
+          : c
+      ));
+      
+      return isOnline;
+    } catch (error) {
+      console.error("Error pinging customer:", error);
+      return false;
+    }
+  };
+
+  const pingAllCustomers = async () => {
+    setPingingAll(true);
+    try {
+      for (const customer of customers) {
+        await pingCustomer(customer.id, customer.anydeskId);
+        // Small delay between pings to avoid overwhelming
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    } finally {
+      setPingingAll(false);
+    }
+  };
+
+  const handleCardClick = (card: { id: string; title: string; anydeskId: string; category: string; notes?: string }) => {
+    // Create a temporary iframe to handle the protocol link
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = `anydesk:${card.anydeskId}`;
+    document.body.appendChild(iframe);
+    
+    // Remove iframe after a short delay
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 1000);
   };
 
   const cards = filteredCustomers.map((customer) => ({
+    id: customer.id,
     title: customer.name,
     anydeskId: customer.anydeskId,
     category: customer.category,
     notes: customer.notes,
+    isOnline: customer.isOnline,
+    lastPing: customer.lastPing,
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950/20 to-slate-950 text-white">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-emerald-800/30">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-6">
             <motion.div
@@ -148,11 +195,11 @@ export default function Home() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
                 <ExternalLink className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-teal-300">
                   MAPOS AnyDesk Manager
                 </h1>
                 <p className="text-sm text-slate-400">
@@ -160,15 +207,27 @@ export default function Home() {
                 </p>
               </div>
             </motion.div>
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full font-medium transition-all duration-200 shadow-lg shadow-blue-500/25"
-            >
-              <Plus className="w-5 h-5" />
-              Add Customer
-            </motion.button>
+            <div className="flex gap-3">
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={pingAllCustomers}
+                disabled={pingingAll}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 rounded-full font-medium transition-all duration-200 shadow-lg shadow-teal-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Activity className="w-5 h-5" />
+                {pingingAll ? "Pinging..." : "Ping All"}
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-full font-medium transition-all duration-200 shadow-lg shadow-emerald-500/25"
+              >
+                <Plus className="w-5 h-5" />
+                Add Customer
+              </motion.button>
+            </div>
           </div>
 
           {/* Search and Filter */}
@@ -189,7 +248,7 @@ export default function Home() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-full text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-xl"
+                className="px-4 py-2 bg-slate-800/50 border border-emerald-700/50 rounded-full text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 backdrop-blur-xl"
               >
                 <option value="">All Categories</option>
                 {categories.map((category) => (
@@ -215,8 +274,8 @@ export default function Home() {
                   {customers.length}
                 </p>
               </div>
-              <div className="w-16 h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center">
-                <ExternalLink className="w-8 h-8 text-blue-400" />
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+                <ExternalLink className="w-8 h-8 text-emerald-400" />
               </div>
             </div>
           </WobbleCard>
@@ -229,8 +288,8 @@ export default function Home() {
                   {categories.length}
                 </p>
               </div>
-              <div className="w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center">
-                <Filter className="w-8 h-8 text-purple-400" />
+              <div className="w-16 h-16 rounded-2xl bg-teal-500/20 flex items-center justify-center">
+                <Filter className="w-8 h-8 text-teal-400" />
               </div>
             </div>
           </WobbleCard>
@@ -238,13 +297,13 @@ export default function Home() {
           <WobbleCard containerClassName="h-32">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-slate-300 text-sm">Filtered Results</p>
+                <p className="text-slate-300 text-sm">Online Status</p>
                 <p className="text-4xl font-bold text-white mt-1">
-                  {filteredCustomers.length}
+                  {customers.filter(c => c.isOnline).length}/{customers.length}
                 </p>
               </div>
-              <div className="w-16 h-16 rounded-2xl bg-green-500/20 flex items-center justify-center">
-                <Search className="w-8 h-8 text-green-400" />
+              <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
+                <Activity className="w-8 h-8 text-cyan-400" />
               </div>
             </div>
           </WobbleCard>
@@ -253,10 +312,10 @@ export default function Home() {
         {/* Customer Cards */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500"></div>
           </div>
         ) : filteredCustomers.length > 0 ? (
-          <FocusCards cards={cards} onCardClick={handleCardClick} />
+          <FocusCards cards={cards} onCardClick={handleCardClick} onPing={pingCustomer} />
         ) : (
           <div className="text-center py-20">
             <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
@@ -287,9 +346,9 @@ export default function Home() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 border border-slate-700/50 rounded-2xl p-8 max-w-md w-full"
+              className="bg-slate-900 border border-emerald-700/50 rounded-2xl p-8 max-w-md w-full"
             >
-              <h2 className="text-2xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+              <h2 className="text-2xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-teal-300">
                 Add New Customer
               </h2>
               <form onSubmit={handleAddCustomer} className="space-y-4">
@@ -304,7 +363,7 @@ export default function Home() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-emerald-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                     placeholder="Enter customer name"
                   />
                 </div>
@@ -319,7 +378,7 @@ export default function Home() {
                     onChange={(e) =>
                       setFormData({ ...formData, anydeskId: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-mono"
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-emerald-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-mono"
                     placeholder="123456789"
                   />
                 </div>
@@ -334,7 +393,7 @@ export default function Home() {
                     onChange={(e) =>
                       setFormData({ ...formData, category: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-emerald-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                     placeholder="e.g., Office, Retail, Support"
                   />
                 </div>
@@ -347,7 +406,7 @@ export default function Home() {
                     onChange={(e) =>
                       setFormData({ ...formData, notes: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-emerald-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
                     rows={3}
                     placeholder="Additional notes..."
                   />
@@ -362,7 +421,7 @@ export default function Home() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-blue-500/25"
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-emerald-500/25"
                   >
                     Add Customer
                   </button>
