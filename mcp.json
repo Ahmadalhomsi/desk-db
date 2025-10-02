@@ -1,0 +1,20 @@
+{
+    // MCP configuration for context7
+    "context": "context7",
+    "version": "1.0.0",
+    "description": "MCP configuration for context7 environment",
+    "settings": {
+        "database": {
+            "type": "sqlite",
+            "file": "context7.db"
+        },
+        "logging": {
+            "level": "info",
+            "file": "logs/context7.log"
+        },
+        "features": {
+            "enableFeatureX": true,
+            "enableFeatureY": false
+        }
+    }
+}
