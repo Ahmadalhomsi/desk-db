@@ -1,103 +1,377 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import { FocusCards } from "@/components/ui/focus-cards";
+import { VanishInput } from "@/components/ui/vanish-input";
+import { WobbleCard } from "@/components/ui/wobble-card";
+import { Search, Plus, ExternalLink, Trash2, Edit, Filter } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+
+interface Customer {
+  id: string;
+  name: string;
+  anydeskId: string;
+  category: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const [formData, setFormData] = useState({
+    name: "",
+    anydeskId: "",
+    category: "",
+    notes: "",
+  });
+
+  useEffect(() => {
+    fetchCustomers();
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    filterCustomers();
+  }, [customers, searchTerm, selectedCategory]);
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/customers");
+      const data = await response.json();
+      setCustomers(data);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories");
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  const filterCustomers = () => {
+    let filtered = customers;
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (customer) =>
+          customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          customer.anydeskId.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (selectedCategory) {
+      filtered = filtered.filter(
+        (customer) => customer.category === selectedCategory
+      );
+    }
+
+    setFilteredCustomers(filtered);
+  };
+
+  const handleAddCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setShowAddModal(false);
+        setFormData({ name: "", anydeskId: "", category: "", notes: "" });
+        fetchCustomers();
+        fetchCategories();
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to add customer");
+      }
+    } catch (error) {
+      console.error("Error adding customer:", error);
+      alert("Failed to add customer");
+    }
+  };
+
+  const handleDeleteCustomer = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this customer?")) return;
+
+    try {
+      const response = await fetch(`/api/customers?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchCustomers();
+        fetchCategories();
+      }
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+    }
+  };
+
+  const handleCardClick = (card: { title: string; anydeskId: string; category: string; notes?: string }) => {
+    window.open(`anydesk:${card.anydeskId}`, "_blank");
+  };
+
+  const cards = filteredCustomers.map((customer) => ({
+    title: customer.name,
+    anydeskId: customer.anydeskId,
+    category: customer.category,
+    notes: customer.notes,
+  }));
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <ExternalLink className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                  MAPOS AnyDesk Manager
+                </h1>
+                <p className="text-sm text-slate-400">
+                  Manage your customer connections
+                </p>
+              </div>
+            </motion.div>
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full font-medium transition-all duration-200 shadow-lg shadow-blue-500/25"
+            >
+              <Plus className="w-5 h-5" />
+              Add Customer
+            </motion.button>
+          </div>
+
+          {/* Search and Filter */}
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1 w-full">
+              <VanishInput
+                placeholders={[
+                  "Search by customer name...",
+                  "Search by AnyDesk ID...",
+                  "Find a customer...",
+                ]}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onSubmit={(value) => setSearchTerm(value)}
+              />
+            </div>
+            <div className="flex gap-2 items-center">
+              <Filter className="w-5 h-5 text-slate-400" />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-full text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-xl"
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 pt-48 pb-20">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <WobbleCard containerClassName="h-32">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-300 text-sm">Total Customers</p>
+                <p className="text-4xl font-bold text-white mt-1">
+                  {customers.length}
+                </p>
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+                <ExternalLink className="w-8 h-8 text-blue-400" />
+              </div>
+            </div>
+          </WobbleCard>
+
+          <WobbleCard containerClassName="h-32">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-300 text-sm">Categories</p>
+                <p className="text-4xl font-bold text-white mt-1">
+                  {categories.length}
+                </p>
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center">
+                <Filter className="w-8 h-8 text-purple-400" />
+              </div>
+            </div>
+          </WobbleCard>
+
+          <WobbleCard containerClassName="h-32">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-300 text-sm">Filtered Results</p>
+                <p className="text-4xl font-bold text-white mt-1">
+                  {filteredCustomers.length}
+                </p>
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-green-500/20 flex items-center justify-center">
+                <Search className="w-8 h-8 text-green-400" />
+              </div>
+            </div>
+          </WobbleCard>
+        </div>
+
+        {/* Customer Cards */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : filteredCustomers.length > 0 ? (
+          <FocusCards cards={cards} onCardClick={handleCardClick} />
+        ) : (
+          <div className="text-center py-20">
+            <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-2xl font-semibold text-slate-400 mb-2">
+              No customers found
+            </h3>
+            <p className="text-slate-500">
+              {customers.length === 0
+                ? "Add your first customer to get started"
+                : "Try adjusting your search or filters"}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Add Customer Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowAddModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-900 border border-slate-700/50 rounded-2xl p-8 max-w-md w-full"
+            >
+              <h2 className="text-2xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                Add New Customer
+              </h2>
+              <form onSubmit={handleAddCustomer} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Customer Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="Enter customer name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    AnyDesk ID *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.anydeskId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, anydeskId: e.target.value })
+                    }
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-mono"
+                    placeholder="123456789"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Category *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.category}
+                    onChange={(e) =>
+                      setFormData({ ...formData, category: e.target.value })
+                    }
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="e.g., Office, Retail, Support"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                    rows={3}
+                    placeholder="Additional notes..."
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-blue-500/25"
+                  >
+                    Add Customer
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
