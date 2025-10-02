@@ -9,8 +9,8 @@ WORKDIR /app
 # Copy only lockfile and manifest for better caching
 COPY package.json package-lock.json* ./
 
-# Install dependencies (only production for runtime image)
-RUN npm ci --omit=dev
+# Install ALL dependencies (dev + prod) for build
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
