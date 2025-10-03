@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FocusCards } from "@/components/ui/focus-cards";
 import { VanishInput } from "@/components/ui/vanish-input";
 import { WobbleCard } from "@/components/ui/wobble-card";
-import { Search, Plus, ExternalLink, Trash2, Edit, Filter, Activity } from "lucide-react";
+import { Search, Plus, ExternalLink, Trash2, Edit, Filter, Activity, Image as ImageIcon, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import Tesseract from 'tesseract.js';
 
 interface Customer {
   id: string;
@@ -28,6 +29,12 @@ export default function Home() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pingingAll, setPingingAll] = useState(false);
+  const [showOcrModal, setShowOcrModal] = useState(false);
+  const [ocrImage, setOcrImage] = useState<string | null>(null);
+  const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [ocrProcessing, setOcrProcessing] = useState(false);
+  const [extractedIds, setExtractedIds] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -174,6 +181,193 @@ export default function Home() {
     }, 1000);
   };
 
+  // OCR functionality
+  const handlePasteImage = async (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const imageUrl = event.target?.result as string;
+            setOcrImage(imageUrl);
+            setShowOcrModal(true);
+            processOCR(imageUrl);
+          };
+          reader.readAsDataURL(blob);
+        }
+      }
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setOcrImage(imageUrl);
+        setShowOcrModal(true);
+        processOCR(imageUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const processOCR = async (imageUrl: string) => {
+    setOcrProcessing(true);
+    setExtractedIds([]);
+    
+    try {
+      // Process image to enhance red text detection
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageUrl;
+      });
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      
+      // Get image data and enhance red colors
+      const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+      if (imageData) {
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const red = data[i];
+          const green = data[i + 1];
+          const blue = data[i + 2];
+          
+          // Enhance pixels that are predominantly red
+          if (red > 100 && red > green * 1.5 && red > blue * 1.5) {
+            // Make red text darker/more contrasted
+            data[i] = 0;     // R
+            data[i + 1] = 0; // G
+            data[i + 2] = 0; // B
+          } else {
+            // Make everything else white
+            data[i] = 255;     // R
+            data[i + 1] = 255; // G
+            data[i + 2] = 255; // B
+          }
+        }
+        ctx?.putImageData(imageData, 0, 0);
+      }
+      
+      const processedImageUrl = canvas.toDataURL();
+      setProcessedImage(processedImageUrl);
+      
+      // Run OCR with better configuration for numbers
+      const result = await Tesseract.recognize(processedImageUrl, 'eng', {
+        logger: (m) => console.log(m),
+      });
+
+      const text = result.data.text.trim();
+      const normalizedText = text
+        .replace(/[Il\|!'](?=\s*\d)/g, "1");
+      console.log('OCR Raw Text:', text);
+      console.log('OCR Normalized Text:', normalizedText);
+      console.log('OCR Text (cleaned):', normalizedText.replace(/[^\d\s]/g, ''));
+      
+      // Clean the text - keep only digits and spaces, normalize multiple spaces to single space
+    const cleanedText = normalizedText.replace(/[^\d\s]/g, '').replace(/\s+/g, ' ').trim();
+      console.log('Cleaned text:', cleanedText);
+      
+      const foundIds: string[] = [];
+      
+      // Extract all digits from the text (removing spaces)
+      const allDigits = cleanedText.replace(/\s/g, '');
+      console.log('All digits found:', allDigits);
+      
+      // If we have 9-11 digits total, this is likely a single AnyDesk ID
+      if (allDigits.length >= 9 && allDigits.length <= 11) {
+        // Format with spaces: put the first 1-3 digits as the first group
+        let formatted = '';
+        
+        // Determine grouping based on total length
+        if (allDigits.length === 10) {
+          // 10 digits: format as "1 234 567 890" (1-3-3-3)
+          formatted = `${allDigits[0]} ${allDigits.slice(1, 4)} ${allDigits.slice(4, 7)} ${allDigits.slice(7)}`;
+        } else if (allDigits.length === 11) {
+          // 11 digits: format as "12 345 678 901" (2-3-3-3)
+          formatted = `${allDigits.slice(0, 2)} ${allDigits.slice(2, 5)} ${allDigits.slice(5, 8)} ${allDigits.slice(8)}`;
+        } else if (allDigits.length === 9) {
+          // 9 digits: format as "123 456 789" (3-3-3)
+          formatted = `${allDigits.slice(0, 3)} ${allDigits.slice(3, 6)} ${allDigits.slice(6)}`;
+        } else {
+          // Other lengths: just split every 3 digits
+          formatted = allDigits.match(/.{1,3}/g)?.join(' ') || allDigits;
+        }
+        
+        foundIds.push(formatted);
+        console.log('Formatted ID:', formatted);
+      } else {
+        // Multiple possible IDs or need different strategy
+        // Try to find digit groups that might be AnyDesk IDs
+        const digitGroups = cleanedText.split(/\s{2,}/).filter(g => g.trim());
+        
+        digitGroups.forEach(group => {
+          const digitsOnly = group.replace(/\s/g, '');
+          if (digitsOnly.length >= 9 && digitsOnly.length <= 11) {
+            // Format this group
+            let formatted = '';
+            if (digitsOnly.length === 10) {
+              formatted = `${digitsOnly[0]} ${digitsOnly.slice(1, 4)} ${digitsOnly.slice(4, 7)} ${digitsOnly.slice(7)}`;
+            } else if (digitsOnly.length === 11) {
+              formatted = `${digitsOnly.slice(0, 2)} ${digitsOnly.slice(2, 5)} ${digitsOnly.slice(5, 8)} ${digitsOnly.slice(8)}`;
+            } else if (digitsOnly.length === 9) {
+              formatted = `${digitsOnly.slice(0, 3)} ${digitsOnly.slice(3, 6)} ${digitsOnly.slice(6)}`;
+            } else {
+              formatted = digitsOnly.match(/.{1,3}/g)?.join(' ') || digitsOnly;
+            }
+            
+            if (!foundIds.includes(formatted)) {
+              foundIds.push(formatted);
+            }
+          }
+        });
+      }
+      
+      console.log('Found IDs:', foundIds);
+      setExtractedIds(foundIds);
+    } catch (error) {
+      console.error('OCR Error:', error);
+      alert('Failed to process image. Please try again with a clearer image.');
+    } finally {
+      setOcrProcessing(false);
+    }
+  };
+
+  const useExtractedId = (id: string) => {
+    setFormData({ ...formData, anydeskId: id });
+    setShowOcrModal(false);
+    setShowAddModal(true);
+  };
+
+  useEffect(() => {
+    // Add paste event listener
+    const handlePaste = (e: ClipboardEvent) => {
+      // Only handle paste if not in an input field
+      const target = e.target as HTMLElement;
+      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+        handlePasteImage(e);
+      }
+    };
+
+    document.addEventListener('paste', handlePaste as any);
+    return () => {
+      document.removeEventListener('paste', handlePaste as any);
+    };
+  }, []);
+
 
   const cards = filteredCustomers.map((customer) => ({
     id: customer.id,
@@ -218,6 +412,21 @@ export default function Home() {
               >
                 <Activity className="w-4 h-4" />
                 {pingingAll ? "Pinging..." : "Ping All"}
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={() => {
+                  setShowOcrModal(true);
+                  setOcrImage(null);
+                  setProcessedImage(null);
+                  setExtractedIds([]);
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors border border-slate-700"
+                title="Extract AnyDesk ID from image"
+              >
+                <ImageIcon className="w-4 h-4" />
+                Scan ID
               </motion.button>
               <motion.button
                 initial={{ opacity: 0, x: 20 }}
@@ -428,6 +637,148 @@ export default function Home() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* OCR Modal */}
+      <AnimatePresence>
+        {showOcrModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowOcrModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-white">
+                  Extract AnyDesk ID from Image
+                </h2>
+                <button
+                  onClick={() => setShowOcrModal(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {!ocrImage ? (
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-slate-700 rounded-lg p-12 text-center">
+                    <ImageIcon className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400 mb-2">
+                      Paste an image (Ctrl+V) or upload a file
+                    </p>
+                    <p className="text-sm text-slate-500 mb-4">
+                      The image should contain an AnyDesk ID (9-10 digits)
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
+                    >
+                      Choose File
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400 mb-2">Original Image:</p>
+                      <div className="relative rounded-lg overflow-hidden border border-slate-800">
+                        <img
+                          src={ocrImage}
+                          alt="Original"
+                          className="w-full h-auto max-h-48 object-contain bg-slate-950"
+                        />
+                      </div>
+                    </div>
+                    {processedImage && (
+                      <div>
+                        <p className="text-xs text-slate-400 mb-2">Processed (Red Text Enhanced):</p>
+                        <div className="relative rounded-lg overflow-hidden border border-slate-800">
+                          <img
+                            src={processedImage}
+                            alt="Processed"
+                            className="w-full h-auto max-h-48 object-contain bg-white"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {ocrProcessing ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500 mx-auto mb-4"></div>
+                      <p className="text-slate-400">Processing image...</p>
+                    </div>
+                  ) : extractedIds.length > 0 ? (
+                    <div>
+                      <h3 className="text-sm font-medium text-slate-300 mb-3">
+                        Found {extractedIds.length} AnyDesk ID{extractedIds.length > 1 ? 's' : ''}:
+                      </h3>
+                      <div className="space-y-2">
+                        {extractedIds.map((id, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-slate-800 rounded-lg p-3 border border-slate-700"
+                          >
+                            <code className="text-lg text-red-400 font-mono">{id}</code>
+                            <button
+                              onClick={() => useExtractedId(id)}
+                              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Use This ID
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-slate-400 mb-2">No AnyDesk IDs found</p>
+                      <p className="text-sm text-slate-500">
+                        Make sure the image is clear and contains a visible AnyDesk ID
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => {
+                        setOcrImage(null);
+                        setProcessedImage(null);
+                        setExtractedIds([]);
+                      }}
+                      className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors border border-slate-700"
+                    >
+                      Try Another Image
+                    </button>
+                    <button
+                      onClick={() => setShowOcrModal(false)}
+                      className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
