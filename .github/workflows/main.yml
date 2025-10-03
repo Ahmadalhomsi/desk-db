@@ -8,7 +8,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/my-app
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/desk-db
 
 jobs:
   build-and-push:
@@ -48,8 +48,8 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Coolify deploy (by tag)
-        run: |
-          curl -sS "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}&tag=${{ github.sha }}" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json"
+    - name: Trigger Coolify deploy (by tag)
+      run: |
+        curl -sS "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}&tag=latest" \
+          -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+          -H "Content-Type: application/json"
