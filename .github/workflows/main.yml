@@ -47,13 +47,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    steps:
-    - name: Show debug info
-      run: |
-        echo "Coolify URL: ${{ secrets.COOLIFY_URL }}"
-        echo "Coolify UUID: ${{ secrets.COOLIFY_APP_UUID }}"
-        echo "Coolify Token (masked): ${{ secrets.COOLIFY_TOKEN }}"
-        
+    steps:      
     - name: Trigger Coolify deploy (by tag)
       run: |
           curl -v --fail-with-body -X GET "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}" \
