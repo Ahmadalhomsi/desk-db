@@ -48,7 +48,14 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+    - name: Show debug info
+      run: |
+        echo "Coolify URL: ${{ secrets.COOLIFY_URL }}"
+        echo "Coolify UUID: ${{ secrets.COOLIFY_APP_UUID }}"
+        echo "Coolify Token: ${{ secrets.COOLIFY_TOKEN:0:5 }}..."
     - name: Trigger Coolify deploy (by tag)
       run: |
-        curl -sS "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}" \
-          -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
+        - name: Trigger Coolify deploy (by tag)
+        run: |
+          curl -v -X GET "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}" \
+          -H "Authorization: Bearer '${{ secrets.COOLIFY_TOKEN }}'"
