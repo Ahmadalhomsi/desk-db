@@ -56,7 +56,5 @@ jobs:
         
     - name: Trigger Coolify deploy (by tag)
       run: |
-        - name: Trigger Coolify deploy (by tag)
-        run: |
-          curl -v -X GET "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}" \
-          -H "Authorization: Bearer '${{ secrets.COOLIFY_TOKEN }}'"
+          curl -v --fail-with-body -X GET "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
