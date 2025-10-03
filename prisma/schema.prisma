@@ -18,7 +18,7 @@ model Customer {
   id          String   @id @default(cuid())
   name        String
   anydeskId   String   @unique
-  category    String
+  category    String   @default("Uncategorized")
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

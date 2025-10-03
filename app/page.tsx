@@ -594,11 +594,10 @@ export default function Home() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Category *
+                    Category (Optional)
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.category}
                     onChange={(e) =>
                       setFormData({ ...formData, category: e.target.value })

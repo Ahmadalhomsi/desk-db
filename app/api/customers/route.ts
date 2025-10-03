@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, anydeskId, category, notes } = body;
 
-    if (!name || !anydeskId || !category) {
+    if (!name || !anydeskId) {
       return NextResponse.json(
-        { error: "Name, AnyDesk ID, and category are required" },
+        { error: "Name and AnyDesk ID are required" },
         { status: 400 }
       );
     }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         anydeskId,
-        category,
+        category: category || "Uncategorized",
         notes,
       },
     });
