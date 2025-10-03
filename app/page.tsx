@@ -174,6 +174,8 @@ export default function Home() {
     }, 1000);
   };
 
+  //test
+
   const cards = filteredCustomers.map((customer) => ({
     id: customer.id,
     title: customer.name,
