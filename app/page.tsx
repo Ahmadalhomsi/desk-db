@@ -383,35 +383,36 @@ export default function Home() {
     <div className="min-h-screen bg-slate-950 text-white">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="container mx-auto px-4 py-4 md:py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 md:mb-6">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-12 h-12 rounded-xl bg-red-600 flex items-center justify-center">
-                <ExternalLink className="w-6 h-6" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-600 flex items-center justify-center">
+                <ExternalLink className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
                   MAPOS AnyDesk Manager
                 </h1>
-                <p className="text-slate-400 mt-1 text-sm">
+                <p className="text-slate-400 mt-1 text-xs sm:text-sm">
                   Manage your customer connections
                 </p>
               </div>
             </motion.div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
               <motion.button
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 onClick={pingAllCustomers}
                 disabled={pingingAll}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-slate-700"
+                className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm sm:text-base font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-slate-700"
               >
                 <Activity className="w-4 h-4" />
-                {pingingAll ? "Pinging..." : "Ping All"}
+                <span className="hidden xs:inline">{pingingAll ? "Pinging..." : "Ping All"}</span>
+                <span className="xs:hidden">Ping</span>
               </motion.button>
               <motion.button
                 initial={{ opacity: 0, x: 20 }}
@@ -422,20 +423,22 @@ export default function Home() {
                   setProcessedImage(null);
                   setExtractedIds([]);
                 }}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors border border-slate-700"
+                className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm sm:text-base font-medium transition-colors border border-slate-700"
                 title="Extract AnyDesk ID from image"
               >
                 <ImageIcon className="w-4 h-4" />
-                Scan ID
+                <span className="hidden xs:inline">Scan ID</span>
+                <span className="xs:hidden">Scan</span>
               </motion.button>
               <motion.button
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
+                className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm sm:text-base font-medium transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Add Customer
+                <span className="hidden xs:inline">Add Customer</span>
+                <span className="xs:hidden">Add</span>
               </motion.button>
             </div>
           </div>
@@ -453,12 +456,12 @@ export default function Home() {
                 onSubmit={(value) => setSearchTerm(value)}
               />
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center w-full md:w-auto">
               <Filter className="w-5 h-5 text-slate-400" />
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                className="flex-1 md:flex-none px-3 sm:px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm sm:text-base text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600"
               >
                 <option value="">All Categories</option>
                 {categories.map((category) => (
@@ -473,47 +476,47 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 pt-48 pb-20">
+      <div className="container mx-auto px-4 pt-44 sm:pt-48 md:pt-52 pb-20">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <WobbleCard containerClassName="h-32">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
+          <WobbleCard containerClassName="h-28 sm:h-32">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-slate-300 text-sm">Total Customers</p>
-                <p className="text-4xl font-bold text-white mt-1">
+                <p className="text-slate-300 text-xs sm:text-sm">Total Customers</p>
+                <p className="text-3xl sm:text-4xl font-bold text-white mt-1">
                   {customers.length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-red-600/20 flex items-center justify-center border border-red-600/30">
-                <ExternalLink className="w-6 h-6 text-red-400" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-red-600/20 flex items-center justify-center border border-red-600/30">
+                <ExternalLink className="w-5 h-5 sm:w-6 sm:h-6 text-red-400" />
               </div>
             </div>
           </WobbleCard>
 
-          <WobbleCard containerClassName="h-32">
+          <WobbleCard containerClassName="h-28 sm:h-32">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-slate-300 text-sm">Categories</p>
-                <p className="text-4xl font-bold text-white mt-1">
+                <p className="text-slate-300 text-xs sm:text-sm">Categories</p>
+                <p className="text-3xl sm:text-4xl font-bold text-white mt-1">
                   {categories.length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-red-600/20 flex items-center justify-center border border-red-600/30">
-                <Filter className="w-6 h-6 text-red-400" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-red-600/20 flex items-center justify-center border border-red-600/30">
+                <Filter className="w-5 h-5 sm:w-6 sm:h-6 text-red-400" />
               </div>
             </div>
           </WobbleCard>
 
-          <WobbleCard containerClassName="h-32">
+          <WobbleCard containerClassName="h-28 sm:h-32 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-slate-300 text-sm">Online Status</p>
-                <p className="text-4xl font-bold text-white mt-1">
+                <p className="text-slate-300 text-xs sm:text-sm">Online Status</p>
+                <p className="text-3xl sm:text-4xl font-bold text-white mt-1">
                   {customers.filter(c => c.isOnline).length}/{customers.length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-red-600/20 flex items-center justify-center border border-red-600/30">
-                <Activity className="w-6 h-6 text-red-400" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-red-600/20 flex items-center justify-center border border-red-600/30">
+                <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-red-400" />
               </div>
             </div>
           </WobbleCard>
@@ -527,12 +530,12 @@ export default function Home() {
         ) : filteredCustomers.length > 0 ? (
           <FocusCards cards={cards} onCardClick={handleCardClick} onDelete={handleDeleteCustomer} onPing={pingCustomer} />
         ) : (
-          <div className="text-center py-20">
-            <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-2xl font-semibold text-slate-400 mb-2">
+          <div className="text-center py-12 sm:py-20 px-4">
+            <Search className="w-12 h-12 sm:w-16 sm:h-16 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl sm:text-2xl font-semibold text-slate-400 mb-2">
               No customers found
             </h3>
-            <p className="text-slate-500">
+            <p className="text-sm sm:text-base text-slate-500">
               {customers.length === 0
                 ? "Add your first customer to get started"
                 : "Try adjusting your search or filters"}
@@ -556,14 +559,14 @@ export default function Home() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full"
+              className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 max-w-md w-full mx-4"
             >
-              <h2 className="text-xl font-bold mb-6 text-white">
+              <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-white">
                 Add New Customer
               </h2>
-              <form onSubmit={handleAddCustomer} className="space-y-4">
+              <form onSubmit={handleAddCustomer} className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
                     Customer Name *
                   </label>
                   <input
@@ -573,12 +576,12 @@ export default function Home() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm sm:text-base bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                     placeholder="Enter customer name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
                     AnyDesk ID *
                   </label>
                   <input
@@ -588,12 +591,12 @@ export default function Home() {
                     onChange={(e) =>
                       setFormData({ ...formData, anydeskId: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent font-mono"
+                    className="w-full px-3 py-2 text-sm sm:text-base bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent font-mono"
                     placeholder="123456789"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
                     Category (Optional)
                   </label>
                   <input
@@ -602,12 +605,12 @@ export default function Home() {
                     onChange={(e) =>
                       setFormData({ ...formData, category: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm sm:text-base bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                     placeholder="e.g., Office, Retail, Support"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
                     Notes (Optional)
                   </label>
                   <textarea
@@ -615,22 +618,22 @@ export default function Home() {
                     onChange={(e) =>
                       setFormData({ ...formData, notes: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 text-sm sm:text-base bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
                     rows={3}
                     placeholder="Additional notes..."
                   />
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-2 sm:gap-3 pt-2 sm:pt-4">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                    className="flex-1 px-4 py-2 text-sm sm:text-base bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
+                    className="flex-1 px-4 py-2 text-sm sm:text-base bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
                   >
                     Add Customer
                   </button>
@@ -656,10 +659,10 @@ export default function Home() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4"
             >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-lg sm:text-xl font-bold text-white">
                   Extract AnyDesk ID from Image
                 </h2>
                 <button
@@ -672,12 +675,12 @@ export default function Home() {
 
               {!ocrImage ? (
                 <div className="space-y-4">
-                  <div className="border-2 border-dashed border-slate-700 rounded-lg p-12 text-center">
-                    <ImageIcon className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-400 mb-2">
+                  <div className="border-2 border-dashed border-slate-700 rounded-lg p-8 sm:p-12 text-center">
+                    <ImageIcon className="w-12 h-12 sm:w-16 sm:h-16 text-slate-600 mx-auto mb-4" />
+                    <p className="text-sm sm:text-base text-slate-400 mb-2">
                       Paste an image (Ctrl+V) or upload a file
                     </p>
-                    <p className="text-sm text-slate-500 mb-4">
+                    <p className="text-xs sm:text-sm text-slate-500 mb-4">
                       The image should contain an AnyDesk ID (9-10 digits)
                     </p>
                     <input
@@ -689,7 +692,7 @@ export default function Home() {
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
+                      className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
                     >
                       Choose File
                     </button>
@@ -697,7 +700,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-slate-400 mb-2">Original Image:</p>
                       <div className="relative rounded-lg overflow-hidden border border-slate-800">
@@ -729,19 +732,19 @@ export default function Home() {
                     </div>
                   ) : extractedIds.length > 0 ? (
                     <div>
-                      <h3 className="text-sm font-medium text-slate-300 mb-3">
+                      <h3 className="text-xs sm:text-sm font-medium text-slate-300 mb-3">
                         Found {extractedIds.length} AnyDesk ID{extractedIds.length > 1 ? 's' : ''}:
                       </h3>
                       <div className="space-y-2">
                         {extractedIds.map((id, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between bg-slate-800 rounded-lg p-3 border border-slate-700"
+                            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 bg-slate-800 rounded-lg p-3 border border-slate-700"
                           >
-                            <code className="text-lg text-red-400 font-mono">{id}</code>
+                            <code className="text-base sm:text-lg text-red-400 font-mono break-all">{id}</code>
                             <button
                               onClick={() => useExtractedId(id)}
-                              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+                              className="w-full sm:w-auto px-4 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
                             >
                               Use This ID
                             </button>
@@ -750,28 +753,28 @@ export default function Home() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <p className="text-slate-400 mb-2">No AnyDesk IDs found</p>
-                      <p className="text-sm text-slate-500">
+                    <div className="text-center py-6 sm:py-8">
+                      <p className="text-sm sm:text-base text-slate-400 mb-2">No AnyDesk IDs found</p>
+                      <p className="text-xs sm:text-sm text-slate-500">
                         Make sure the image is clear and contains a visible AnyDesk ID
                       </p>
                     </div>
                   )}
 
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-2 sm:gap-3 pt-4">
                     <button
                       onClick={() => {
                         setOcrImage(null);
                         setProcessedImage(null);
                         setExtractedIds([]);
                       }}
-                      className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors border border-slate-700"
+                      className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors border border-slate-700"
                     >
                       Try Another Image
                     </button>
                     <button
                       onClick={() => setShowOcrModal(false)}
-                      className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                      className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors"
                     >
                       Close
                     </button>
