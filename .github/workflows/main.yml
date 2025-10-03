@@ -52,7 +52,8 @@ jobs:
       run: |
         echo "Coolify URL: ${{ secrets.COOLIFY_URL }}"
         echo "Coolify UUID: ${{ secrets.COOLIFY_APP_UUID }}"
-        echo "Coolify Token: ${{ secrets.COOLIFY_TOKEN:0:5 }}..."
+        echo "Coolify Token (masked): ${{ secrets.COOLIFY_TOKEN }}"
+        
     - name: Trigger Coolify deploy (by tag)
       run: |
         - name: Trigger Coolify deploy (by tag)
